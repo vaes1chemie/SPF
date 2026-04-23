@@ -265,9 +265,8 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 
 <header class="header">
   <div class="header-inner">
-    <div class="logo-wrap" id="logoWrap">
-      <span class="ph">LOGO</span>
-      <img id="logoImg" alt="Schullogo" style="display:none;">
+    <div class="logo-wrap">
+      <img src="GKG_Chemie_LOGO.png" alt="GKG Chemie Logo">
     </div>
     <div>
       <div class="breadcrumb"><a href="index.html">← CHEMIE</a></div>
@@ -477,22 +476,6 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 </main>
 
 <script>
-// ---------- Logo aus localStorage anzeigen ----------
-(function() {
-  try {
-    const saved = localStorage.getItem('chemie_school_logo');
-    if (saved) {
-      const img = document.getElementById('logoImg');
-      const wrap = document.getElementById('logoWrap');
-      const ph = wrap.querySelector('.ph');
-      img.src = saved;
-      img.style.display = 'block';
-      if (ph) ph.style.display = 'none';
-      wrap.classList.add('has-logo');
-    }
-  } catch (e) { /* ignore */ }
-})();
-
 // ---------- Accordion ----------
 document.querySelectorAll('.chapter-head').forEach(head => {
   head.addEventListener('click', () => {
