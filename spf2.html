@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPF 2. Klasse · Chemie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f7;
+  --bg-alt: #f3f1ee;
+  --text: #1a1a1a;
+  --text-muted: #6b6560;
+  --text-light: #9c9891;
+  --border: #e5e2dd;
+  --accent: #c08a56;
+  --accent-light: #f7ecdf;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+.header { background: #1e293b; color: white; padding: 40px 24px 44px; position: relative; overflow: hidden; }
+.header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 25% 40%, rgba(192,138,86,0.18) 0%, transparent 50%), radial-gradient(circle at 75% 60%, rgba(74,122,181,0.08) 0%, transparent 40%); }
+.header-inner { position: relative; max-width: 820px; margin: 0 auto; display: flex; align-items: center; gap: 20px; }
+.logo-wrap { flex-shrink: 0; width: 56px; height: 56px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.logo-wrap.has-logo { border-style: solid; border-color: rgba(255,255,255,0.15); background: white; }
+.logo-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-wrap .ph { font-family: var(--mono); font-size: 0.55rem; color: rgba(255,255,255,0.4); }
+.breadcrumb { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 8px; }
+.breadcrumb a { color: #e0c4a8; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.header h1 { font-family: var(--serif); font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 400; line-height: 1.1; }
+.main { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
+.section-label { font-family: var(--mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); margin-bottom: 16px; }
+.chapters { display: flex; flex-direction: column; gap: 12px; }
+.chapter { background: white; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: all 0.25s; }
+.chapter.has-content:hover { border-color: var(--accent); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+.chapter.locked { opacity: 0.55; }
+.chapter-head { display: flex; align-items: center; gap: 16px; padding: 22px 24px; cursor: pointer; user-select: none; }
+.chapter.locked .chapter-head { cursor: not-allowed; }
+.chapter-num { font-family: var(--mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); width: 70px; flex-shrink: 0; }
+.chapter-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 400; line-height: 1.2; flex: 1; }
+.chapter-tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em; flex-shrink: 0; }
+.tag-active { background: #eef6f0; color: #2d5a37; }
+.tag-soon { background: var(--bg-alt); color: var(--text-light); }
+.chapter-chevron { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 0.85rem; transition: transform 0.3s; flex-shrink: 0; }
+.chapter.locked .chapter-chevron { color: var(--text-light); }
+.chapter.open .chapter-chevron { transform: rotate(180deg); }
+.chapter-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+.chapter.open .chapter-body { max-height: 1000px; border-top: 1px solid var(--border); }
+.subtopics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 18px 24px 22px; }
+@media (max-width: 600px) { .subtopics { grid-template-columns: 1fr; } }
+.subtopic { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--text); transition: all 0.18s; font-size: 0.92rem; }
+.subtopic:hover { background: var(--accent-light); border-color: var(--accent); transform: translateX(2px); }
+.subtopic.locked { opacity: 0.55; cursor: not-allowed; }
+.subtopic.locked:hover { background: var(--bg); border-color: var(--border); transform: none; }
+.subtopic-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.subtopic.locked .subtopic-dot { background: var(--text-light); }
+.subtopic-name { flex: 1; font-weight: 500; }
+.subtopic-arrow { color: var(--accent); font-size: 0.95rem; opacity: 0; transition: all 0.18s; }
+.subtopic:hover .subtopic-arrow { opacity: 1; }
+.subtopic.locked .subtopic-arrow { display: none; }
+.subtopic-lock { font-size: 0.78rem; color: var(--text-light); }
+.subtopic:not(.locked) .subtopic-lock { display: none; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 40px; font-size: 0.88rem; color: var(--text-muted); text-decoration: none; font-weight: 500; }
+.back-link:hover { color: var(--accent); }
+@media (max-width: 600px) { .header { padding: 32px 20px 36px; } .chapter-head { padding: 18px 18px; gap: 12px; } .chapter-num { width: 60px; font-size: 0.65rem; } .chapter-title { font-size: 1.1rem; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-wrap" id="logoWrap">
+      <span class="ph">LOGO</span>
+      <img id="logoImg" alt="Schullogo" style="display:none;">
+    </div>
+    <div>
+      <div class="breadcrumb"><a href="index.html">← CHEMIE</a></div>
+      <h1>SPF 2. Klasse</h1>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="section-label">Kapitel · 2. Klasse Schwerpunktfach</div>
+
+  <div class="chapters" id="chapters">
+
+    <div class="chapter" data-chapter="zucker">
+      <div class="chapter-head">
+        <div class="chapter-num">Kapitel 1</div>
+        <div class="chapter-title">Zucker</div>
+        <span class="chapter-tag"></span>
+        <div class="chapter-chevron">▾</div>
+      </div>
+      <div class="chapter-body">
+        <div class="subtopics">
+          <a href="zucker/monosaccharide.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Monosaccharide</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="zucker/fischer-haworth.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Fischer- & Haworth-Projektion</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="zucker/disaccharide.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Di- & Polysaccharide</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="zucker/nachweise.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Zucker-Nachweise</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="chapter" data-chapter="indigo">
+      <div class="chapter-head">
+        <div class="chapter-num">Kapitel 2</div>
+        <div class="chapter-title">Indigo</div>
+        <span class="chapter-tag"></span>
+        <div class="chapter-chevron">▾</div>
+      </div>
+      <div class="chapter-body">
+        <div class="subtopics">
+          <a href="indigo/geschichte.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Geschichte & Vorkommen</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="indigo/synthese.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Indigo-Synthese</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="indigo/kuepenfaerberei.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Küpenfärberei</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="indigo/farbigkeit.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Farbigkeit & Chromophore</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="chapter" data-chapter="aspirin">
+      <div class="chapter-head">
+        <div class="chapter-num">Kapitel 3</div>
+        <div class="chapter-title">Aspirin</div>
+        <span class="chapter-tag"></span>
+        <div class="chapter-chevron">▾</div>
+      </div>
+      <div class="chapter-body">
+        <div class="subtopics">
+          <a href="aspirin/salicylsaeure.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Von Salicin zur Salicylsäure</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="aspirin/synthese.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Aspirin-Synthese</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="aspirin/reaktionsmechanismus.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Reaktionsmechanismus</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="aspirin/analytik.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Ausbeute & Analytik</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="chapter" data-chapter="leitfaehigkeit">
+      <div class="chapter-head">
+        <div class="chapter-num">Kapitel 4</div>
+        <div class="chapter-title">Leitfähigkeit</div>
+        <span class="chapter-tag"></span>
+        <div class="chapter-chevron">▾</div>
+      </div>
+      <div class="chapter-body">
+        <div class="subtopics">
+          <a href="leitfaehigkeit/ionen.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Ionen in Lösung</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="leitfaehigkeit/messung.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Leitfähigkeitsmessung</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="leitfaehigkeit/starke-schwache.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Starke & schwache Elektrolyte</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+          <a href="leitfaehigkeit/titration.html" class="subtopic"><span class="subtopic-dot"></span><span class="subtopic-name">Leitfähigkeitstitration</span><span class="subtopic-lock">🔒</span><span class="subtopic-arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <a href="index.html" class="back-link">← Zurück zur Übersicht</a>
+</main>
+
+<script>
+(function() {
+  try {
+    const saved = localStorage.getItem('chemie_school_logo');
+    if (saved) {
+      const img = document.getElementById('logoImg');
+      const wrap = document.getElementById('logoWrap');
+      const ph = wrap.querySelector('.ph');
+      img.src = saved;
+      img.style.display = 'block';
+      if (ph) ph.style.display = 'none';
+      wrap.classList.add('has-logo');
+    }
+  } catch (e) {}
+})();
+
+document.querySelectorAll('.chapter-head').forEach(head => {
+  head.addEventListener('click', () => {
+    const chapter = head.parentElement;
+    if (chapter.classList.contains('locked')) return;
+    chapter.classList.toggle('open');
+  });
+});
+
+(async function() {
+  for (const chapter of document.querySelectorAll('.chapter')) {
+    const subtopics = chapter.querySelectorAll('.subtopic');
+    let anyAvailable = false;
+    for (const st of subtopics) {
+      const href = st.getAttribute('href');
+      if (!href) { st.classList.add('locked'); continue; }
+      try {
+        const res = await fetch(href, { method: 'HEAD' });
+        if (res.ok) { anyAvailable = true; }
+        else { st.classList.add('locked'); st.addEventListener('click', e => e.preventDefault()); }
+      } catch (e) { st.classList.add('locked'); st.addEventListener('click', e => e.preventDefault()); }
+    }
+    const tag = chapter.querySelector('.chapter-tag');
+    if (anyAvailable) { chapter.classList.add('has-content'); tag.textContent = 'Verfügbar'; tag.classList.add('tag-active'); }
+    else { chapter.classList.add('locked'); tag.textContent = 'Kommt bald'; tag.classList.add('tag-soon'); }
+  }
+})();
+</script>
+
+</body>
+</html>

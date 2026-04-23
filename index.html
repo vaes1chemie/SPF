@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chemie · Schwerpunktfach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f7;
+  --bg-alt: #f3f1ee;
+  --text: #1a1a1a;
+  --text-muted: #6b6560;
+  --text-light: #9c9891;
+  --border: #e5e2dd;
+  --accent: #4a7ab5;
+  --accent-light: #e8eff7;
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Header */
+.header {
+  background: #1e293b;
+  color: white;
+  padding: 48px 24px 52px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 25% 40%, rgba(74,122,181,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 75% 60%, rgba(123,192,138,0.1) 0%, transparent 40%);
+}
+.header-inner {
+  position: relative;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Logo */
+.logo-wrap {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px dashed rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.logo-wrap:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.45); }
+.logo-wrap.has-logo { border-style: solid; border-color: rgba(255,255,255,0.15); background: white; }
+.logo-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-placeholder {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  line-height: 1.3;
+  padding: 6px;
+}
+.logo-input { display: none; }
+.logo-reset {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  border: none;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.logo-wrap.has-logo .logo-reset { display: flex; }
+.logo-wrap.has-logo .logo-placeholder { display: none; }
+
+.header-text { flex: 1; min-width: 0; }
+.header-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: rgba(74,122,181,0.2);
+  border: 1px solid rgba(74,122,181,0.3);
+  color: #a8c4e0;
+  padding: 4px 14px;
+  border-radius: 100px;
+  margin-bottom: 12px;
+}
+.header h1 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  font-weight: 400;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.header p { font-size: 0.98rem; color: #94a3b8; }
+
+/* Main */
+.main { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  margin-bottom: 16px;
+}
+
+/* Class cards */
+.classes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.class-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+.class-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.07);
+  border-color: var(--accent);
+}
+
+.class-card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle at top right, var(--card-accent, var(--accent-light)) 0%, transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.class-card:nth-child(1) { --card-accent: #e8eff7; }
+.class-card:nth-child(2) { --card-accent: #f7ecdf; }
+.class-card:nth-child(3) { --card-accent: #e6f0e8; }
+.class-card:nth-child(4) { --card-accent: #efe9f4; }
+
+.class-num {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+.class-card:nth-child(1) .class-num { color: #5b8ab5; }
+.class-card:nth-child(2) .class-num { color: #c08a56; }
+.class-card:nth-child(3) .class-num { color: #5a9e6a; }
+.class-card:nth-child(4) .class-num { color: #8b72b0; }
+
+.class-title {
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.class-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.class-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.class-count {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.class-arrow {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 1.1rem;
+  transition: transform 0.2s;
+}
+.class-card:hover .class-arrow { transform: translateX(3px); }
+
+/* Footer note */
+.footer-note {
+  text-align: center;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .classes { grid-template-columns: 1fr; }
+  .header { padding: 36px 20px 40px; }
+  .header-inner { gap: 18px; }
+  .logo-wrap { width: 60px; height: 60px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <label class="logo-wrap" id="logoWrap" for="logoInput" title="Logo hochladen (klicken)">
+      <span class="logo-placeholder">Logo<br>hochladen</span>
+      <img id="logoImg" alt="Schullogo" style="display:none;">
+      <button type="button" class="logo-reset" id="logoReset" title="Logo entfernen">×</button>
+    </label>
+    <input type="file" id="logoInput" class="logo-input" accept="image/*">
+    <div class="header-text">
+      <div class="header-badge">SCHWERPUNKTFACH</div>
+      <h1>Chemie</h1>
+      <p>Visualisierungen und interaktive Lerneinheiten</p>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="section-label">Klassenstufen</div>
+
+  <div class="classes">
+
+    <a href="spf1.html" class="class-card">
+      <div class="class-num">Stufe 1</div>
+      <div class="class-title">SPF 1. Klasse</div>
+      <div class="class-desc">Alles Dufte · Kernreaktionen · Juglon · Lumineszenz · Energieumwandlungen</div>
+      <div class="class-footer">
+        <span class="class-count">5 Kapitel</span>
+        <span class="class-arrow">&rarr;</span>
+      </div>
+    </a>
+
+    <a href="spf2.html" class="class-card">
+      <div class="class-num">Stufe 2</div>
+      <div class="class-title">SPF 2. Klasse</div>
+      <div class="class-desc">Zucker · Indigo · Aspirin · Leitfähigkeit</div>
+      <div class="class-footer">
+        <span class="class-count">4 Kapitel</span>
+        <span class="class-arrow">&rarr;</span>
+      </div>
+    </a>
+
+    <a href="spf3.html" class="class-card">
+      <div class="class-num">Stufe 3</div>
+      <div class="class-title">SPF 3. Klasse</div>
+      <div class="class-desc">Proteine · Pyrotechnik · Komplexe · Kosmetik · Analysemethoden</div>
+      <div class="class-footer">
+        <span class="class-count">5 Kapitel</span>
+        <span class="class-arrow">&rarr;</span>
+      </div>
+    </a>
+
+    <a href="spf4.html" class="class-card">
+      <div class="class-num">Stufe 4</div>
+      <div class="class-title">SPF 4. Klasse</div>
+      <div class="class-desc">Energie · Elektrochemie · Katalyse</div>
+      <div class="class-footer">
+        <span class="class-count">3 Kapitel</span>
+        <span class="class-arrow">&rarr;</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="footer-note">
+    Kapitel und Unterthemen werden im Verlauf des Schuljahres freigeschaltet.<br>
+    Bei Fragen wenden Sie sich an Ihre Lehrperson.
+  </div>
+</main>
+
+<script>
+// ---------- Logo-Upload (lokal im Browser via localStorage) ----------
+(function() {
+  const STORAGE_KEY = 'chemie_school_logo';
+  const wrap = document.getElementById('logoWrap');
+  const input = document.getElementById('logoInput');
+  const img = document.getElementById('logoImg');
+  const resetBtn = document.getElementById('logoReset');
+
+  function showLogo(dataUrl) {
+    img.src = dataUrl;
+    img.style.display = 'block';
+    wrap.classList.add('has-logo');
+  }
+  function hideLogo() {
+    img.src = '';
+    img.style.display = 'none';
+    wrap.classList.remove('has-logo');
+  }
+
+  // Beim Laden: gespeichertes Logo anzeigen
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) showLogo(saved);
+  } catch (e) { /* ignore */ }
+
+  input.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      showLogo(dataUrl);
+      try { localStorage.setItem(STORAGE_KEY, dataUrl); } catch (e) { /* ignore */ }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  resetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideLogo();
+    input.value = '';
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+  });
+})();
+
+// ---------- Auto-Unlock: prüft welche Klassen-Seiten existieren ----------
+// (optional – Karten bleiben auch ohne Check klickbar, führen dann ggf. ins Leere)
+(async function() {
+  const cards = document.querySelectorAll('.class-card');
+  for (const card of cards) {
+    const href = card.getAttribute('href');
+    if (!href || href.startsWith('http')) continue;
+    try {
+      const res = await fetch(href, { method: 'HEAD' });
+      if (!res.ok) {
+        card.style.opacity = '0.55';
+        card.style.cursor = 'not-allowed';
+        card.addEventListener('click', (e) => e.preventDefault());
+        const count = card.querySelector('.class-count');
+        if (count) count.textContent = 'Kommt bald';
+      }
+    } catch (e) { /* ignore */ }
+  }
+})();
+</script>
+
+</body>
+</html>
