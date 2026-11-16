@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ligandenfeld-Labor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<style>
+/* Layout: Kopf mit Geometriewahl, darunter Steuerleiste; 3D-Modell und Energieschema nebeneinander; Auswertung (Spin, Farbe, Hybridisierung) darunter. */
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --ink:#15202b; --muted:#556474; --line:#d3dae1;
+  --hi:#c9364f; --lo:#17788c; --acc:#6a45c9; --tint:#ece8fa;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-disp:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#171f28; --ink:#e7ecf1; --muted:#95a3b2; --line:#2b3643;
+  --hi:#f27c8d; --lo:#55bcd0; --acc:#ab90f2; --tint:#241f3a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#171f28; --ink:#e7ecf1; --muted:#95a3b2; --line:#2b3643;
+  --hi:#f27c8d; --lo:#55bcd0; --acc:#ab90f2; --tint:#241f3a; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--f-body)}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+h1,h2,h3,p{margin:0}
+h1{font:600 clamp(28px,4.4vw,40px)/1.05 var(--f-disp);letter-spacing:-.01em;text-wrap:balance}
+h2{font:600 13px/1.2 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.lead{color:var(--muted);max-width:62ch}
+sub,sup{font-size:.72em;line-height:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+header{display:flex;flex-wrap:wrap;gap:18px 32px;align-items:flex-end;justify-content:space-between}
+header .txt{display:flex;flex-direction:column;gap:8px;min-width:0}
+
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:3px;gap:3px}
+.seg button,.chip{font:500 14px/1 var(--f-body);color:var(--ink);background:transparent;border:1px solid transparent;border-radius:6px;padding:9px 13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button small{font:400 11px var(--f-mono);opacity:.7;margin-left:5px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.controls{display:grid;grid-template-columns:minmax(180px,230px) 1fr auto;gap:16px 24px;align-items:end}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.flabel{font:500 12px/1.2 var(--f-body);color:var(--muted)}
+select{font:500 15px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%}
+.series{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chip{border-color:var(--line);padding:8px 10px;font-family:var(--f-mono);font-size:13px}
+.chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--surface)}
+.series .lt{color:var(--muted);font:400 12px var(--f-mono)}
+.scale{display:flex;justify-content:space-between;font:400 11px var(--f-mono);color:var(--muted)}
+.formula{font:500 clamp(22px,3vw,30px)/1.1 var(--f-mono);white-space:nowrap}
+.formula span{display:block;font:400 12px var(--f-mono);color:var(--muted);margin-top:6px}
+
+.grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
+.stage{position:relative;aspect-ratio:4/3;max-width:100%;border-radius:8px;background:var(--bg);overflow:hidden;touch-action:none;cursor:grab}
+.stage canvas{display:block;width:100%;height:100%}
+.stage .ax{position:absolute;font:500 12px var(--f-mono);color:var(--muted);transform:translate(-50%,-50%);pointer-events:none}
+.stage .hint{position:absolute;left:10px;bottom:8px;font:400 11px var(--f-mono);color:var(--muted);pointer-events:none}
+.orbs{display:flex;flex-wrap:wrap;gap:4px}
+.orbs .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink)}
+.slider{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:400 12px var(--f-mono);color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.note{font-size:14px;color:var(--ink)}
+.note b{font-weight:600}
+.small{font-size:13px;color:var(--muted)}
+
+svg{display:block;width:100%;height:auto;max-width:100%}
+.lvl{stroke-width:2.5;stroke-linecap:round}
+.lvl.hi{stroke:var(--hi)} .lvl.lo{stroke:var(--lo)}
+.lvl.sel{stroke-width:5}
+.el{stroke:var(--ink);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.gl{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+.ax-l{stroke:var(--muted);stroke-width:1.2;fill:none}
+.t{font:400 11px var(--f-mono);fill:var(--muted)}
+.t.b{font-weight:500;fill:var(--ink);font-size:12px}
+.t.hi{fill:var(--hi)} .t.lo{fill:var(--lo)}
+.hit{fill:transparent;cursor:pointer}
+.why{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3 .wide{grid-column:1/-1}
+.big{font:600 24px/1.1 var(--f-disp)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:28px 1fr 88px;gap:8px;align-items:center;font:400 12px var(--f-mono)}
+.bar i{display:block;height:10px;border-radius:5px;background:var(--acc)}
+.bar.p i{background:var(--muted)}
+.bar .track{background:var(--bg);border-radius:5px;min-width:0}
+.colorrow{display:flex;gap:14px;align-items:stretch}
+.swatch{flex:0 0 76px;min-height:76px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.spec{position:relative}
+.spec canvas{width:100%;height:34px;border-radius:5px;display:block}
+.ticks{display:flex;justify-content:space-between;font:400 10px var(--f-mono);color:var(--muted);padding-top:3px}
+
+.boxes{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-start}
+.shell{display:flex;flex-direction:column;gap:5px}
+.shell>span{font:500 12px var(--f-mono);color:var(--muted)}
+.shell .row{display:flex;gap:3px}
+.bx{width:38px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bx b{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1.5px solid var(--line);border-radius:5px;font:500 17px var(--f-mono);letter-spacing:-2px}
+.bx.h b{border-color:var(--acc);background:var(--tint)}
+.bx.l b{color:var(--acc)}
+.bx small{font:400 10px var(--f-mono);color:var(--muted);white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1.5px solid var(--acc);background:var(--tint);vertical-align:-2px;margin-right:5px}
+.legend em{font-style:normal;color:var(--acc);font-family:var(--f-mono)}
+.panel>summary{cursor:pointer}
+.panel>summary h2{display:inline}
+.dbody{display:flex;flex-direction:column;gap:12px}
+.tasks{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:75ch}
+
+@media (max-width:860px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .controls{grid-template-columns:1fr}
+  .stage{aspect-ratio:1/1;max-height:380px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="txt">
+      <span class="eyebrow">Komplexchemie · d-Orbitale im Ligandenfeld</span>
+      <h1>Ligandenfeld-Labor</h1>
+      <p class="lead">Wähle Geometrie, Zentralion und Liganden. Drehe das Modell und beobachte, wie sich Aufspaltung, Spinzustand und Farbe verändern.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Geometrie">
+      <button id="g-okt" data-geo="okt" aria-pressed="true">Oktaeder<small>KZ 6</small></button>
+      <button id="g-sqp" data-geo="sqp" aria-pressed="false">quadratisch-planar<small>KZ 4</small></button>
+      <button id="g-tet" data-geo="tet" aria-pressed="false">Tetraeder<small>KZ 4</small></button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="controls">
+      <div class="field" id="f-metal">
+        <label for="metal">Zentralion</label>
+        <select id="metal"></select>
+      </div>
+      <div class="field" id="f-lig">
+        <span class="flabel">Ligand (spektrochemische Reihe)</span>
+        <div class="series" id="series" role="group" aria-label="Ligand"></div>
+        <div class="scale"><span>schwaches Feld · kleines Δ</span><span>starkes Feld · grosses Δ</span></div>
+      </div>
+      <div class="field" id="f-ex" hidden>
+        <label for="example">Beispielkomplex</label>
+        <select id="example"></select>
+      </div>
+      <div class="field" id="f-exnote" hidden><p class="small" id="exnote"></p></div>
+      <div class="formula" id="formula"></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>3D-Modell</h2>
+      <div class="stage" id="stage">
+        <canvas id="gl"></canvas>
+        <span class="hint" id="hint">ziehen = drehen</span>
+      </div>
+      <div class="field">
+        <span class="flabel">Anzeige</span>
+        <div class="orbs" id="orbs" role="group" aria-label="Orbital anzeigen"></div>
+      </div>
+      <div class="slider">
+        <label for="approach">Liganden weit weg</label>
+        <input type="range" id="approach" min="0" max="100" value="100">
+        <span>gebunden</span>
+      </div>
+      <p class="note" id="orbnote"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Energieschema der d-Orbitale</h2>
+      <div id="diagram"></div>
+      <p class="small">Klicke auf ein Niveau, um das Orbital im 3D-Modell zu sehen. Mit dem Regler links näherst du die Liganden an: Zuerst steigt die Energie aller d-Orbitale, dann spalten sie auf.</p>
+      <h2>Warum diese Aufspaltung?</h2>
+      <ul class="why" id="why"></ul>
+    </section>
+  </div>
+
+  <div class="grid3">
+    <section class="panel">
+      <h2>High-spin oder low-spin?</h2>
+      <div class="big" id="spinbig"></div>
+      <div class="bars" id="bars"></div>
+      <p class="note" id="spintxt"></p>
+      <dl class="kv" id="spinkv"></dl>
+    </section>
+
+    <section class="panel">
+      <h2>Farbe</h2>
+      <div class="colorrow">
+        <div class="swatch" id="swatch" role="img" aria-label="Farbe der Lösung"></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <div class="big" id="colbig"></div>
+          <div class="spec" id="specwrap">
+            <canvas id="spec" width="600" height="34"></canvas>
+            <div class="ticks"><span>400</span><span>450</span><span>500</span><span>550</span><span>600</span><span>650</span><span>700 nm</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="note" id="coltxt"></p>
+      <p class="small" id="colnote"></p>
+    </section>
+
+    <details class="panel wide" id="hybd">
+      <summary><h2>Für Interessierte: Hybridisierung des Zentralteilchens</h2></summary>
+      <div class="dbody">
+      <div class="big" id="hybbig"></div>
+      <div class="boxes" id="boxes"></div>
+      <div class="legend"><span><i></i>Hybridorbital</span><span><em>↑↓</em> Elektronenpaar eines Liganden</span><span><span class="mono" style="color:var(--ink)">↑</span> d-Elektron des Metalls</span></div>
+      <p class="note" id="hybtxt"></p>
+      <p class="small">Hinweis: Die Hybridisierung stammt aus dem Valenzbindungsmodell. Es erklärt die Geometrie und ob Elektronen gepaart sind. Die Farbe und die Grösse von Δ erklärt erst das Ligandenfeldmodell.</p>
+      <p class="small">Hinweis zu sp<sup>3</sup>d<sup>2</sup>: Die äusseren d-Orbitale liegen energetisch sehr hoch. Ihre Beteiligung ist eine formale Buchhaltung und gilt heute als unrealistisch. Das Ligandenfeldmodell kommt ohne sie aus.</p>
+      <p class="small">Solange dieser Abschnitt offen ist, kannst du im 3D-Modell die Hybridorbitale einblenden.</p>
+      </div>
+    </details>
+
+    <section class="panel wide">
+      <h2>Erkunde</h2>
+      <ol class="tasks">
+        <li>Stelle Fe<sup>2+</sup> ein und gehe die Liganden von Br<sup>−</sup> bis CN<sup>−</sup> durch. Bei welchem Liganden kippt der Komplex von high-spin zu low-spin? Wie ändern sich dabei die Besetzung der Orbitale und die Farbe?</li>
+        <li>Vergleiche Cu<sup>2+</sup> mit H<sub>2</sub>O und mit NH<sub>3</sub>. Erkläre mit dem Spektrum, warum die Lösung mit Ammoniak tiefer blau wird.</li>
+        <li>Warum sind Zn<sup>2+</sup>-Komplexe farblos und Mn<sup>2+</sup>-Komplexe nur sehr blass?</li>
+        <li>Wechsle zum Tetraeder. Welche Orbitale liegen jetzt oben? Begründe mit dem 3D-Modell.</li>
+        <li>Wechsle zu quadratisch-planar und wähle [Ni(CN)<sub>4</sub>]<sup>2−</sup>. Welches Orbital bleibt leer? Begründe mit dem 3D-Modell, warum gerade dieses so hoch liegt.</li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const ORB={xy:'xy',xz:'xz',yz:'yz',z2:'z²',x2y2:'x²−y²'};
+const ORDER=['xy','xz','yz','z2','x2y2'];
+const S3=1/Math.sqrt(3);
+
+const GEO={
+  okt:{lig:[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
+    groups:[{name:['e','g'],E:.6,orbs:['z2','x2y2']},{name:['t','2g'],E:-.4,orbs:['xy','xz','yz']}],
+    why:['Die sechs Liganden sitzen <b>auf den Achsen</b> x, y und z. Ihre Elektronenpaare stossen die d-Elektronen des Zentralions ab.',
+         'd<sub>z²</sub> und d<sub>x²−y²</sub> zeigen <b>direkt auf die Liganden</b>. Die Abstossung ist stark, die Energie steigt: e<sub>g</sub>.',
+         'd<sub>xy</sub>, d<sub>xz</sub> und d<sub>yz</sub> liegen <b>zwischen den Achsen</b> und weichen den Liganden aus. Ihre Energie sinkt: t<sub>2g</sub>.',
+         'Der Energieschwerpunkt bleibt erhalten: 2 · (+0.6 Δ<sub>o</sub>) + 3 · (−0.4 Δ<sub>o</sub>) = 0.'],
+    orb:{z2:'Die beiden grossen Lappen liegen auf der z-Achse und zeigen direkt auf zwei Liganden. Starke Abstossung: Das Orbital gehört zu <b>e<sub>g</sub></b> (angehoben).',
+         x2y2:'Alle vier Lappen liegen auf der x- und y-Achse und zeigen direkt auf vier Liganden. Starke Abstossung: <b>e<sub>g</sub></b> (angehoben).',
+         xy:'Die Lappen liegen in der xy-Ebene genau zwischen den Achsen. Sie weichen den Liganden aus: <b>t<sub>2g</sub></b> (abgesenkt).',
+         xz:'Die Lappen liegen in der xz-Ebene zwischen den Achsen. Sie weichen den Liganden aus: <b>t<sub>2g</sub></b> (abgesenkt).',
+         yz:'Die Lappen liegen in der yz-Ebene zwischen den Achsen. Sie weichen den Liganden aus: <b>t<sub>2g</sub></b> (abgesenkt).'}},
+  sqp:{lig:[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]],
+    groups:[{E:1.228,orbs:['x2y2']},{E:.228,orbs:['xy']},{E:-.428,orbs:['z2']},{E:-.514,orbs:['xz','yz']}],
+    why:['Stell dir einen Oktaeder vor, dem die beiden Liganden auf der <b>z-Achse entfernt</b> wurden. Es bleiben vier Liganden auf ±x und ±y.',
+         'Alle Orbitale mit z-Anteil (d<sub>z²</sub>, d<sub>xz</sub>, d<sub>yz</sub>) spüren weniger Abstossung und <b>sinken</b>.',
+         'd<sub>x²−y²</sub> zeigt weiterhin direkt auf alle vier Liganden und liegt <b>mit Abstand am höchsten</b>. d<sub>xy</sub> liegt in der Ligandenebene, aber zwischen den Liganden: mittlere Lage.',
+         'Bei <b>d<sup>8</sup></b> füllen die acht Elektronen genau die vier unteren Orbitale. Das hohe d<sub>x²−y²</sub> bleibt leer. Deshalb ist diese Geometrie für d<sup>8</sup>-Ionen so günstig.'],
+    orb:{x2y2:'Alle vier Lappen zeigen direkt auf die vier Liganden. Das Orbital liegt sehr hoch und bleibt bei d<sup>8</sup> leer.',
+         xy:'Das Orbital liegt in der Ebene der Liganden, aber zwischen ihnen. Mittlere Energie.',
+         z2:'Die Hauptlappen zeigen entlang z, wo keine Liganden mehr sind. Nur der Ring in der xy-Ebene spürt die Liganden: tiefe Energie.',
+         xz:'Die Lappen ragen aus der Ligandenebene heraus und weichen allen Liganden aus: tiefste Energie.',
+         yz:'Die Lappen ragen aus der Ligandenebene heraus und weichen allen Liganden aus: tiefste Energie.'}},
+  tet:{lig:[[S3,S3,S3],[S3,-S3,-S3],[-S3,S3,-S3],[-S3,-S3,S3]],
+    groups:[{name:['t','2'],E:.178,orbs:['xy','xz','yz']},{name:['e',''],E:-.267,orbs:['z2','x2y2']}],
+    why:['Die vier Liganden sitzen auf jeder zweiten <b>Ecke eines Würfels</b>, also auf keiner Achse.',
+         'd<sub>xy</sub>, d<sub>xz</sub> und d<sub>yz</sub> zeigen zu den Kantenmitten des Würfels und kommen den Liganden <b>näher</b>. Sie werden angehoben: t<sub>2</sub>.',
+         'd<sub>z²</sub> und d<sub>x²−y²</sub> zeigen zu den Flächenmitten, <b>weiter weg</b> von den Liganden. Sie werden abgesenkt: e. Die Reihenfolge ist umgekehrt wie im Oktaeder.',
+         'Kein Orbital zeigt direkt auf einen Liganden, und es sind nur vier statt sechs. Die Aufspaltung ist deshalb klein: Δ<sub>t</sub> ≈ 4/9 Δ<sub>o</sub>. Tetraedrische Komplexe sind praktisch immer <b>high-spin</b>.'],
+    orb:{xy:'Die Lappen zeigen zu den Kantenmitten des Würfels. Das ist näher an den Liganden auf den Ecken: <b>t<sub>2</sub></b> (leicht angehoben).',
+         xz:'Die Lappen zeigen zu den Kantenmitten des Würfels. Das ist näher an den Liganden auf den Ecken: <b>t<sub>2</sub></b> (leicht angehoben).',
+         yz:'Die Lappen zeigen zu den Kantenmitten des Würfels. Das ist näher an den Liganden auf den Ecken: <b>t<sub>2</sub></b> (leicht angehoben).',
+         z2:'Die Lappen zeigen zu den Flächenmitten des Würfels, am weitesten weg von den Liganden: <b>e</b> (abgesenkt).',
+         x2y2:'Die Lappen zeigen zu den Flächenmitten des Würfels, am weitesten weg von den Liganden: <b>e</b> (abgesenkt).'}}
+};
+
+/* Zentralionen: g in 1000 cm^-1 (Δo des Aquakomplexes), P = Spinpaarungsenergie im Komplex (Richtwert) */
+const METALS=[
+  {k:'Ti3+',sym:'Ti',ox:3,d:1,g:20.3},{k:'V3+',sym:'V',ox:3,d:2,g:17.9},{k:'Cr3+',sym:'Cr',ox:3,d:3,g:17.4},
+  {k:'Cr2+',sym:'Cr',ox:2,d:4,g:14.0,P:18.8},{k:'Mn2+',sym:'Mn',ox:2,d:5,g:8.0,P:20.4},{k:'Fe3+',sym:'Fe',ox:3,d:5,g:14.0,P:24.0},
+  {k:'Fe2+',sym:'Fe',ox:2,d:6,g:10.4,P:14.1},{k:'Co3+',sym:'Co',ox:3,d:6,g:18.2,P:16.8},{k:'Co2+',sym:'Co',ox:2,d:7,g:9.0,P:18.0},
+  {k:'Ni2+',sym:'Ni',ox:2,d:8,g:8.7},{k:'Cu2+',sym:'Cu',ox:2,d:9,g:12.0},{k:'Zn2+',sym:'Zn',ox:2,d:10,g:0}
+];
+const LIGS=[
+  {k:'Br',h:'Br<sup>−</sup>',in:'Br',q:-1,f:.72},{k:'Cl',h:'Cl<sup>−</sup>',in:'Cl',q:-1,f:.78},{k:'F',h:'F<sup>−</sup>',in:'F',q:-1,f:.90},
+  {k:'OH',h:'OH<sup>−</sup>',in:'(OH)',q:-1,f:.94},{k:'H2O',h:'H<sub>2</sub>O',in:'(H<sub>2</sub>O)',q:0,f:1.00},
+  {k:'NH3',h:'NH<sub>3</sub>',in:'(NH<sub>3</sub>)',q:0,f:1.25},{k:'en',h:'en',in:'(en)',q:0,f:1.28,n:3},{k:'CN',h:'CN<sup>−</sup>',in:'(CN)',q:-1,f:1.70}
+];
+/* gemessene Δo-Werte (1000 cm^-1), wo die Näherung f·g zu stark abweicht */
+const LIT={'Fe2+|CN':32.8,'Fe3+|CN':35.0,'Co3+|CN':34.8,'Cr3+|CN':26.6,'Co3+|F':13.1,'Co3+|NH3':22.9,'Cr3+|NH3':21.6,'Ni2+|NH3':10.8,'Co3+|en':23.2,'Ni2+|en':11.5};
+const EST={'Mn2+|CN':27,'Co2+|CN':20};
+
+const EX={
+  tet:[
+    {f:'[CoCl<sub>4</sub>]<sup>2−</sup>',ion:'Co<sup>2+</sup>',d:7,n:4,col:'#2456d8',name:'tiefblau',note:'Kräftige Farbe: Im Tetraeder fehlt das Inversionszentrum, die d-d-Übergänge sind stärker erlaubt als im Oktaeder.'},
+    {f:'[NiCl<sub>4</sub>]<sup>2−</sup>',ion:'Ni<sup>2+</sup>',d:8,n:4,col:'#3f7fd9',name:'blau',note:'Zwei ungepaarte Elektronen in t<sub>2</sub>. Vergleiche mit dem quadratisch-planaren [Ni(CN)<sub>4</sub>]<sup>2−</sup>, in dem alle Elektronen gepaart sind.'},
+    {f:'[FeCl<sub>4</sub>]<sup>−</sup>',ion:'Fe<sup>3+</sup>',d:5,n:4,col:'#e9cf52',name:'gelb',note:'d<sup>5</sup> high-spin: Jeder d-d-Übergang würde einen Spin umklappen und ist deshalb fast verboten. Die gelbe Farbe stammt von einer Charge-Transfer-Bande (Elektron vom Liganden zum Metall).'},
+    {f:'[Zn(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>',ion:'Zn<sup>2+</sup>',d:10,n:4,col:'#fbfcfd',name:'farblos',note:'d<sup>10</sup>: Alle d-Orbitale sind voll. Kein Elektron kann angehoben werden, es gibt keine d-d-Absorption.'}
+  ],
+  sqp:[
+    {f:'[Ni(CN)<sub>4</sub>]<sup>2−</sup>',ion:'Ni<sup>2+</sup>',d:8,n:4,col:'#f0dc6a',name:'gelb',note:'Starker Ligand CN<sup>−</sup>: Die Lücke zu d<sub>x²−y²</sub> ist so gross, dass sich alle acht Elektronen paaren.'},
+    {f:'[PtCl<sub>4</sub>]<sup>2−</sup>',ion:'Pt<sup>2+</sup>',d:8,n:6,col:'#c8432f',name:'rot',note:'5d-Metalle haben eine grosse Aufspaltung. Pt<sup>2+</sup> ist deshalb sogar mit dem schwachen Liganden Cl<sup>−</sup> quadratisch-planar.'},
+    {f:'[PtCl<sub>2</sub>(NH<sub>3</sub>)<sub>2</sub>]',ion:'Pt<sup>2+</sup>',d:8,n:6,col:'#efd95f',name:'gelb',note:'Cisplatin, ein neutraler Komplex. Die planare Geometrie ermöglicht cis- und trans-Isomere.'},
+    {f:'[AuCl<sub>4</sub>]<sup>−</sup>',ion:'Au<sup>3+</sup>',d:8,n:6,col:'#edc94a',name:'gelb',note:'Au<sup>3+</sup> ist ebenfalls d<sup>8</sup> und ein 5d-Metall: quadratisch-planar.'},
+    {f:'[Cu(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>',ion:'Cu<sup>2+</sup>',d:9,n:4,col:'#2b3fc4',name:'tiefblau',note:'d<sup>9</sup>: ein ungepaartes Elektron in d<sub>x²−y²</sub>. In Lösung sitzen zusätzlich zwei H<sub>2</sub>O weit entfernt auf der z-Achse (gestreckter Oktaeder).'}
+  ]
+};
+
+const st={geo:'okt',metal:6,lig:4,ex:{tet:0,sqp:0},view:'z2',t:1};
+
+/* ---------- Chemie ---------- */
+function fill(groups,d,hs){
+  const asc=[...groups].sort((a,b)=>a.E-b.E), occ={}; ORDER.forEach(o=>occ[o]=0);
+  let n=d;
+  if(hs){
+    for(let pass=0;pass<2;pass++) for(const g of asc) for(const o of g.orbs){ if(n>0){occ[o]++;n--;} }
+  }else{
+    for(const g of asc) for(let pass=0;pass<2;pass++) for(const o of g.orbs){ if(n>0){occ[o]++;n--;} }
+  }
+  return occ;
+}
+function delta(m,l){
+  const key=m.k+'|'+l.k;
+  if(LIT[key]) return {v:LIT[key],src:'Messwert'};
+  if(EST[key]) return {v:EST[key],src:'Schätzwert'};
+  if(l.k==='H2O') return {v:m.g,src:'Messwert, gerundet'};
+  return {v:Math.round(m.g*l.f*10)/10,src:'Näherung'};
+}
+function bandsFor(d,hs,D){
+  const B=(r,a,s)=>r.map(x=>({nu:x*D,a:a||1.3,s:s||1.7}));
+  switch(d){
+    case 0: case 10: return [];
+    case 1: return B([1]);
+    case 2: return B([.93,1.38]);
+    case 3: return B([1,1.41]);
+    case 4: return B([1]);
+    case 5: return hs?B([2.3,3.0],.04):B([1]);
+    case 6: return hs?B([1]):B([.92,1.29]);
+    case 7: return hs?B([.87,2.2]):B([1]);
+    case 8: return B([1,1.65,2.9]);
+    case 9: return B([1],1.3,2.6);
+  }
+  return [];
+}
+function wl2rgb(w){
+  let r=0,g=0,b=0; if(w<380||w>750) return [0,0,0];
+  if(w<440){r=(440-w)/60;b=1}else if(w<490){g=(w-440)/50;b=1}else if(w<510){g=1;b=(510-w)/20}
+  else if(w<580){r=(w-510)/70;g=1}else if(w<645){r=1;g=(645-w)/65}else{r=1}
+  let f=1; if(w<420) f=.3+.7*(w-380)/40; else if(w>700) f=.3+.7*(750-w)/50;
+  return [r*f,g*f,b*f];
+}
+function trans(bands,w){ const nu=1e4/w; let A=0; for(const b of bands) A+=b.a*Math.exp(-((nu-b.nu)**2)/(2*b.s*b.s)); return Math.pow(10,-A); }
+function solColor(bands){
+  const s=[0,0,0],n=[0,0,0];
+  for(let w=380;w<=750;w+=5){ const c=wl2rgb(w),T=trans(bands,w); for(let i=0;i<3;i++){s[i]+=c[i]*T;n[i]+=c[i];} }
+  return s.map((x,i)=>x/n[i]);
+}
+function hueName(c){
+  const mx=Math.max(...c),mn=Math.min(...c),s=mx-mn;
+  if(s<.07) return 'praktisch farblos';
+  let h; const [r,g,b]=c;
+  if(mx===r) h=((g-b)/s)%6; else if(mx===g) h=(b-r)/s+2; else h=(r-g)/s+4;
+  h=(h*60+360)%360;
+  const nm=h<15?'rot':h<45?'orange':h<70?'gelb':h<160?'grün':h<200?'blaugrün':h<255?'blau':h<290?'violett':h<345?'rosa bis purpur':'rot';
+  return (s<.25?'blass ':'')+nm;
+}
+function region(w){ return w<380?'UV (unsichtbar)':w<430?'Violett':w<490?'Blau':w<510?'Blaugrün':w<565?'Grün':w<590?'Gelb':w<625?'Orange':w<=750?'Rot':'IR (unsichtbar)'; }
+const fmt=v=>Math.round(v*1000).toLocaleString('de-CH').replace(/[’',]/g,' ');
+
+function current(){
+  const G=GEO[st.geo];
+  if(st.geo==='okt'){
+    const m=METALS[st.metal],l=LIGS[st.lig],D=delta(m,l);
+    const choice=m.d>=4&&m.d<=7, hs=choice?D.v<m.P:true;
+    const occ=fill(G.groups,m.d,hs);
+    const n=l.n||6, q=m.ox+n*l.q;
+    const qs=q===0?'':'<sup>'+(Math.abs(q)===1?'':Math.abs(q))+(q>0?'+':'−')+'</sup>';
+    return {G,d:m.d,occ,hs,choice,D,P:m.P,m,l,n:4,
+      formula:(q===0?'[':'[')+m.sym+l.in+'<sub>'+n+'</sub>]'+qs, ion:m.sym+'<sup>'+m.ox+'+</sup>'};
+  }
+  const e=EX[st.geo][st.ex[st.geo]];
+  const occ=fill(G.groups,e.d,st.geo==='tet');
+  return {G,d:e.d,occ,hs:st.geo==='tet',e,n:e.n,formula:e.f,ion:e.ion};
+}
+const unpaired=occ=>ORDER.filter(o=>occ[o]===1).length;
+
+/* ---------- Energieschema ---------- */
+const COLX={xy:62,xz:104,yz:146,z2:236,x2y2:282};
+function drawDiagram(c){
+  const t=st.t, y0=212, rise=58;
+  let S=105;
+  if(st.geo==='okt') S=Math.max(34,(c.D.v||8)*5.1);
+  const Y=E=>y0-rise*t-E*S*t;
+  let s='<svg viewBox="0 0 320 262" role="img" aria-label="Energieschema der d-Orbitale">';
+  s+='<path class="ax-l" d="M22 244V16M18 22l4-7 4 7"/><text class="t" x="30" y="20">E</text>';
+  s+='<line class="gl" x1="40" x2="304" y1="'+y0+'" y2="'+y0+'"/><text class="t" x="304" y="'+(y0+13)+'" text-anchor="end">freies Ion: alle fünf gleich</text>';
+  if(t>.15){ const yb=Y(0); s+='<line class="gl" x1="40" x2="304" y1="'+yb+'" y2="'+yb+'"/>'; }
+  const lv=[];
+  for(const g of c.G.groups){
+    const y=Y(g.E), cls=g.E>0?'hi':'lo';
+    for(const o of g.orbs){
+      const x=COLX[o];
+      s+='<line class="lvl '+cls+(st.view===o?' sel':'')+'" x1="'+(x-16)+'" x2="'+(x+16)+'" y1="'+y+'" y2="'+y+'"/>';
+      const n=c.occ[o];
+      if(n>=1) s+='<path class="el" d="M'+(x-5)+' '+(y+8)+'V'+(y-12)+'m-3.5 5l3.5-5 3.5 5"/>';
+      if(n===2) s+='<path class="el" d="M'+(x+5)+' '+(y-12)+'V'+(y+8)+'m-3.5-5l3.5 5 3.5-5"/>';
+      lv.push({o,y});
+    }
+    if(g.name&&t>.5){
+      const left=g.orbs.includes('xy');
+      s+='<text class="t b '+cls+'" x="'+(left?42:302)+'" y="'+(y-14)+'" text-anchor="'+(left?'end':'start')+'" dx="'+(left?0:-10)+'">'+g.name[0]+'<tspan dy="4" font-size="9">'+g.name[1]+'</tspan></text>';
+    }
+  }
+  if(t>.5){
+    const gs=c.G.groups; let ya,yb,lab;
+    if(st.geo==='okt'){ya=Y(.6);yb=Y(-.4);lab=['Δ','o'];}
+    else if(st.geo==='tet'){ya=Y(.178);yb=Y(-.267);lab=['Δ','t'];}
+    else {ya=Y(1.228);yb=Y(.228);lab=['Δ','o'];}
+    if(yb-ya>16){
+      s+='<path class="ax-l" d="M190 '+(ya+3)+'V'+(yb-3)+'M186.5 '+(ya+9)+'l3.5-6 3.5 6M186.5 '+(yb-9)+'l3.5 6 3.5-6"/>';
+      s+='<text class="t b" x="197" y="'+((ya+yb)/2+4)+'">'+lab[0]+'<tspan dy="4" font-size="9">'+lab[1]+'</tspan></text>';
+    }
+  }
+  for(const o of ORDER){
+    s+='<text class="t'+(st.view===o?' b':'')+'" x="'+COLX[o]+'" y="256" text-anchor="middle">'+ORB[o]+'</text>';
+    s+='<rect class="hit" data-orb="'+o+'" x="'+(COLX[o]-21)+'" y="10" width="42" height="250"><title>d('+ORB[o]+') anzeigen</title></rect>';
+  }
+  s+='</svg>';
+  $('diagram').innerHTML=s;
+}
+
+/* ---------- Auswertung ---------- */
+function renderSpin(c){
+  const n=unpaired(c.occ), mu=Math.sqrt(n*(n+2));
+  let big,txt,bars='';
+  if(st.geo==='okt'){
+    if(c.d===10){ big='voll besetzt'; txt='Bei d<sup>10</sup> sind alle fünf d-Orbitale doppelt besetzt. Die Grösse der Aufspaltung spielt für die Besetzung keine Rolle.'; }
+    else if(!c.choice){ big='eindeutige Besetzung'; txt='Bei d<sup>'+c.d+'</sup> gibt es im Oktaeder nur eine Möglichkeit, die Elektronen zu verteilen. Die Frage high-spin oder low-spin stellt sich erst bei d<sup>4</sup> bis d<sup>7</sup>.'; }
+    else{
+      big=c.hs?'high-spin':'low-spin';
+      const mx=Math.max(c.D.v,c.P,36);
+      bars='<div class="bar"><span>Δ<sub>o</sub></span><div class="track"><i style="width:'+(c.D.v/mx*100)+'%"></i></div><span>'+fmt(c.D.v)+' cm⁻¹</span></div>'+
+           '<div class="bar p"><span>P</span><div class="track"><i style="width:'+(c.P/mx*100)+'%"></i></div><span>'+fmt(c.P)+' cm⁻¹</span></div>';
+      txt=c.hs?'<b>Δ<sub>o</sub> &lt; P:</b> Ein Elektron in e<sub>g</sub> anzuheben kostet weniger Energie, als es mit einem anderen zu paaren. Die Elektronen besetzen zuerst alle fünf Orbitale einzeln (Hundsche Regel).'
+              :'<b>Δ<sub>o</sub> &gt; P:</b> Die Aufspaltung ist so gross, dass Paaren günstiger ist. Die Elektronen füllen zuerst t<sub>2g</sub> vollständig.';
+    }
+  }else if(st.geo==='tet'){
+    big='high-spin'; txt='Δ<sub>t</sub> ist nur etwa 4/9 von Δ<sub>o</sub> und damit kleiner als die Spinpaarungsenergie. Die Elektronen verteilen sich zuerst einzeln auf alle Orbitale.';
+  }else{
+    big='low-spin'; txt='Die Lücke zum obersten Orbital d<sub>x²−y²</sub> ist sehr gross. Die Elektronen paaren sich in den vier unteren Orbitalen.';
+  }
+  $('spinbig').innerHTML=big; $('bars').innerHTML=bars; $('bars').hidden=!bars; $('spintxt').innerHTML=txt;
+  let kv='<dt>Konfiguration</dt><dd>d<sup>'+c.d+'</sup></dd>';
+  if(st.geo==='okt'){
+    const nt=c.occ.xy+c.occ.xz+c.occ.yz, ne=c.occ.z2+c.occ.x2y2;
+    kv+='<dt>Besetzung</dt><dd>t<sub>2g</sub><sup>'+nt+'</sup> e<sub>g</sub><sup>'+ne+'</sup></dd>';
+    if(c.d<10){
+      const l=Math.round((-.4*nt+.6*ne)*10)/10;
+      kv+='<dt>Δ<sub>o</sub></dt><dd>'+fmt(c.D.v)+' cm⁻¹ ≈ '+Math.round(c.D.v*11.96)+' kJ/mol <span style="opacity:.65">('+c.D.src+')</span></dd>';
+      kv+='<dt>Stabilisierung</dt><dd>'+(l===0?'0':l.toFixed(1).replace('-','−'))+' Δ<sub>o</sub></dd>';
+    }
+  }
+  kv+='<dt>ungepaarte e⁻</dt><dd>'+n+'</dd>';
+  $('spinkv').innerHTML=kv;
+}
+
+function renderColor(c){
+  const sw=$('swatch');
+  if(st.geo!=='okt'){
+    $('specwrap').hidden=true; sw.style.background=c.e.col; $('colbig').textContent=c.e.name;
+    $('coltxt').innerHTML=c.e.note; $('colnote').textContent='Farbe nach Beobachtung, nicht berechnet.'; return;
+  }
+  $('specwrap').hidden=false;
+  const bands=bandsFor(c.d,c.hs,c.D.v), col=solColor(bands);
+  sw.style.background='rgb('+col.map(x=>Math.round(255*Math.min(1,x))).join(',')+')';
+  $('colbig').textContent=hueName(col);
+  const cv=$('spec'),g=cv.getContext('2d');
+  for(let x=0;x<cv.width;x++){
+    const w=380+x/cv.width*370, rgb=wl2rgb(w), T=trans(bands,w);
+    g.fillStyle='rgb('+rgb.map(v=>Math.round(255*v*T)).join(',')+')'; g.fillRect(x,0,1,cv.height);
+  }
+  let txt,note='';
+  if(c.d===10){ txt='Alle d-Orbitale sind voll besetzt. Kein Elektron kann von unten nach oben angehoben werden, also wird kein sichtbares Licht absorbiert.'; }
+  else{
+    const lam=1e4/c.D.v;
+    txt='Ein Elektron wird von t<sub>2g</sub> nach e<sub>g</sub> angehoben. Dafür braucht es genau die Energie Δ<sub>o</sub> = h·c/λ. Das entspricht λ ≈ <b>'+Math.round(lam)+' nm</b> ('+region(lam)+'). ';
+    if(c.d===5&&c.hs) txt+='Bei d<sup>5</sup> high-spin müsste das Elektron dabei seinen Spin umklappen. Solche Übergänge sind fast verboten, die Farbe ist deshalb nur sehr blass.';
+    else txt+='Dieses Licht fehlt im durchgelassenen Spektrum (dunkle Stellen oben). Wir sehen den Rest, also etwa die Komplementärfarbe.';
+    if(bands.length>1&&!(c.d===5&&c.hs)) note='Bei mehreren d-Elektronen entstehen durch die Abstossung zwischen den Elektronen mehrere Banden. Sie sind im Spektrum eingezeichnet. ';
+    if(c.l.k==='CN') note+='Bei Cyanido-Komplexen stammt die sichtbare Farbe oft von Charge-Transfer-Banden, die dieses Modell nicht erfasst. ';
+  }
+  $('coltxt').innerHTML=txt;
+  $('colnote').textContent=note+'Modellrechnung nur mit d-d-Übergängen. Nicht jede Kombination existiert als stabiler Komplex.';
+}
+
+function renderHybrid(c){
+  const n=c.n, occ=c.occ;
+  const shells=[
+    {lab:(n-1)+'d',bx:ORDER.map(o=>({sub:ORB[o],m:occ[o]}))},
+    {lab:n+'s',bx:[{m:0}]},
+    {lab:n+'p',bx:[{m:0},{m:0},{m:0}]}
+  ];
+  let name,txt;
+  const L=b=>{b.h=1;b.l=1;};
+  if(st.geo==='okt'){
+    const inner=occ.z2===0&&occ.x2y2===0;
+    shells[1].bx.forEach(L); shells[2].bx.forEach(L);
+    if(inner){
+      L(shells[0].bx[3]); L(shells[0].bx[4]); name='d<sup>2</sup>sp<sup>3</sup>';
+      txt='<b>Inner-Orbital-Komplex.</b> d<sub>z²</sub> und d<sub>x²−y²</sub> sind leer. Sie bilden zusammen mit '+n+'s und den drei '+n+'p-Orbitalen sechs gleichwertige Hybridorbitale, die in die Ecken eines Oktaeders zeigen. Jedes nimmt ein Elektronenpaar eines Liganden auf. Es sind genau die e<sub>g</sub>-Orbitale des Ligandenfeldmodells.';
+    }else{
+      shells.push({lab:n+'d',bx:[{m:0},{m:0},{m:0},{m:0},{m:0}]}); L(shells[3].bx[0]); L(shells[3].bx[1]); name='sp<sup>3</sup>d<sup>2</sup>';
+      txt='<b>Outer-Orbital-Komplex.</b> Alle fünf '+(n-1)+'d-Orbitale enthalten Elektronen des Metalls. Die sechs Elektronenpaare der Liganden weichen deshalb auf '+n+'s, '+n+'p und zwei '+n+'d-Orbitale aus. Das passt zum Befund aus dem Ligandenfeldmodell: e<sub>g</sub> ist besetzt.';
+    }
+  }else if(st.geo==='tet'){
+    shells[1].bx.forEach(L); shells[2].bx.forEach(L); name='sp<sup>3</sup>';
+    txt='Das '+n+'s- und die drei '+n+'p-Orbitale bilden vier Hybridorbitale, die in die Ecken eines Tetraeders zeigen. Die d-Elektronen des Metalls bleiben in den '+(n-1)+'d-Orbitalen und verteilen sich nach der Hundschen Regel.';
+  }else{
+    name='dsp<sup>2</sup>'; L(shells[0].bx[4]); L(shells[1].bx[0]); L(shells[2].bx[0]); L(shells[2].bx[1]);
+    shells[2].bx[0].sub='x'; shells[2].bx[1].sub='y'; shells[2].bx[2].sub='z';
+    txt='d<sub>x²−y²</sub>, '+n+'s, '+n+'p<sub>x</sub> und '+n+'p<sub>y</sub> liegen alle in der xy-Ebene. Sie bilden vier Hybridorbitale, die in die Ecken eines Quadrats zeigen. Die acht d-Elektronen sind in den übrigen vier d-Orbitalen gepaart.';
+    if(occ.x2y2>0){ shells[2].bx[2].m=1; txt='Für dsp<sup>2</sup> muss d<sub>x²−y²</sub> frei sein. Bei d<sup>9</sup> müsste das neunte Elektron dafür nach '+n+'p<sub>z</sub> ausweichen. Hier stösst das Hybridisierungsmodell an seine Grenzen. Das Ligandenfeldmodell beschreibt diesen Komplex besser: ein ungepaartes Elektron in d<sub>x²−y²</sub>.'; }
+  }
+  $('hybbig').innerHTML=name+' <span class="small" style="font-family:var(--f-body);font-weight:400">· '+c.ion+', d<sup>'+c.d+'</sup></span>';
+  $('hybtxt').innerHTML=txt;
+  $('boxes').innerHTML=shells.map(s=>'<div class="shell"><span>'+s.lab+'</span><div class="row">'+s.bx.map(b=>
+    '<div class="bx'+(b.h?' h':'')+(b.l?' l':'')+'"><b>'+(b.l?'↑↓':b.m===2?'↑↓':b.m===1?'↑':'')+'</b><small>'+(b.sub||'&nbsp;')+'</small></div>').join('')+'</div></div>').join('');
+}
+
+/* ---------- 3D ---------- */
+let T3=null; const labels=[];
+const FN={xy:(x,y,z)=>2*x*y,xz:(x,y,z)=>2*x*z,yz:(x,y,z)=>2*y*z,x2y2:(x,y,z)=>x*x-y*y,z2:(x,y,z)=>(3*z*z-1)/2};
+function tok(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888888'; }
+function init3D(){
+  if(!window.THREE) throw new Error('three');
+  const stage=$('stage'),canvas=$('gl');
+  const r=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(32,1,.1,100);
+  const root=new THREE.Group(); root.rotation.x=-Math.PI/2; scene.add(root);
+  scene.add(new THREE.AmbientLight(0xffffff,.72));
+  const dl=new THREE.DirectionalLight(0xffffff,.75); dl.position.set(3,5,6); cam.add(dl); scene.add(cam);
+  for(const a of ['x','y','z']){ const el=document.createElement('span'); el.className='ax'; el.textContent=a; stage.appendChild(el); labels.push({el,p:new THREE.Vector3(a==='x'?3.75:0,a==='y'?3.75:0,a==='z'?3.75:0)}); }
+  T3={r,scene,cam,root,th:.85,ph:1.12,auto:!matchMedia('(prefers-reduced-motion: reduce)').matches,w:1,h:1};
+  const size=()=>{ const w=stage.clientWidth,h=stage.clientHeight; if(!w||!h) return; T3.w=w;T3.h=h; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); };
+  if(window.ResizeObserver) new ResizeObserver(size).observe(stage); else addEventListener('resize',size);
+  size();
+  let drag=null;
+  stage.addEventListener('pointerdown',e=>{ drag=[e.clientX,e.clientY]; T3.auto=false; $('hint').hidden=true; stage.setPointerCapture(e.pointerId); stage.style.cursor='grabbing'; });
+  stage.addEventListener('pointermove',e=>{ if(!drag) return; T3.th+=(e.clientX-drag[0])*.01; T3.ph=Math.max(.15,Math.min(Math.PI-.15,T3.ph-(e.clientY-drag[1])*.01)); drag=[e.clientX,e.clientY]; });
+  const up=()=>{ drag=null; stage.style.cursor='grab'; };
+  stage.addEventListener('pointerup',up); stage.addEventListener('pointercancel',up);
+  const v=new THREE.Vector3();
+  (function loop(){
+    requestAnimationFrame(loop);
+    if(T3.auto) T3.th+=.0035;
+    const R=16/Math.min(1,cam.aspect);
+    cam.position.set(R*Math.sin(T3.ph)*Math.cos(T3.th),R*Math.cos(T3.ph),R*Math.sin(T3.ph)*Math.sin(T3.th)); cam.lookAt(0,0,0);
+    r.render(scene,cam);
+    for(const l of labels){ v.copy(l.p).applyMatrix4(root.matrixWorld).project(cam); l.el.style.left=((v.x+1)/2*T3.w)+'px'; l.el.style.top=((1-v.y)/2*T3.h)+'px'; }
+  })();
+}
+function lobe(fn,R,cA,cB,opacity){
+  const g=new THREE.SphereGeometry(1,72,48), p=g.attributes.position, col=new Float32Array(p.count*3);
+  const a=new THREE.Color(cA), b=new THREE.Color(cB);
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i), f=fn(x,y,z), rr=Math.abs(f)*R+.001, c=f>=0?a:b;
+    p.setXYZ(i,x*rr,y*rr,z*rr); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
+  }
+  g.setAttribute('color',new THREE.BufferAttribute(col,3)); g.computeVertexNormals();
+  return new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.5,metalness:0,transparent:opacity<1,opacity,side:THREE.DoubleSide,depthWrite:opacity>=.8}));
+}
+function line(a,b,color,op){
+  const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a),new THREE.Vector3(...b)]);
+  return new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));
+}
+function build3D(c){
+  if(!T3) return;
+  const root=T3.root;
+  while(root.children.length){ const o=root.children.pop(); o.traverse(n=>{ if(n.geometry) n.geometry.dispose(); if(n.material) n.material.dispose(); }); }
+  const ink=tok('--ink'),muted=tok('--muted'),hi=tok('--hi'),lo=tok('--lo'),acc=tok('--acc'),surf=tok('--surface');
+  const A=3.4;
+  root.add(line([-A,0,0],[A,0,0],muted,.55),line([0,-A,0],[0,A,0],muted,.55),line([0,0,-A],[0,0,A],muted,.55));
+  const dist=2.75+(1-st.t)*1.55;
+  root.add(new THREE.Mesh(new THREE.SphereGeometry(.3,24,16),new THREE.MeshStandardMaterial({color:ink,roughness:.4})));
+  for(const d of c.G.lig){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(.34,24,16),new THREE.MeshStandardMaterial({color:acc,roughness:.35}));
+    m.position.set(d[0]*dist,d[1]*dist,d[2]*dist); root.add(m);
+    if(st.t>.85) root.add(line([0,0,0],[d[0]*dist,d[1]*dist,d[2]*dist],acc,.5));
+  }
+  if(st.geo==='tet'){
+    const s=2*dist*S3, e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s,s,s)),new THREE.LineBasicMaterial({color:muted,transparent:true,opacity:.45}));
+    root.add(e);
+  }
+  if(st.view==='hyb'){
+    for(const d of c.G.lig){
+      const fn=(x,y,z)=>{ const f=.3+.7*(x*d[0]+y*d[1]+z*d[2]); return Math.sign(f)*Math.abs(f)**3; };
+      const mixed=new THREE.Color(acc).lerp(new THREE.Color(surf),.5);
+      root.add(lobe(fn,2.35,acc,'#'+mixed.getHexString(),.6));
+    }
+  }else if(FN[st.view]){
+    const g=c.G.groups.find(g=>g.orbs.includes(st.view)), base=g.E>0?hi:lo;
+    const light=new THREE.Color(base).lerp(new THREE.Color(surf),.55);
+    root.add(lobe(FN[st.view],1.95,base,'#'+light.getHexString(),.9));
+  }
+}
+
+/* ---------- UI ---------- */
+function update(){
+  const c=current();
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.geo===st.geo));
+  const okt=st.geo==='okt';
+  $('f-metal').hidden=!okt; $('f-lig').hidden=!okt; $('f-ex').hidden=okt; $('f-exnote').hidden=okt;
+  if(!okt){
+    const sel=$('example'); sel.innerHTML=EX[st.geo].map((e,i)=>'<option value="'+i+'">'+e.f.replace(/<[^>]+>/g,'')+' · d'+e.d+'</option>').join(''); sel.value=st.ex[st.geo];
+    $('exnote').textContent=st.geo==='tet'?'Typisch für d⁰ und d¹⁰ sowie für grosse, schwache Liganden wie Cl⁻.':'Typisch für d⁸ mit starken Liganden und für Pd²⁺, Pt²⁺, Au³⁺.';
+  }
+  document.querySelectorAll('#series .chip').forEach((b,i)=>b.setAttribute('aria-pressed',i===st.lig));
+  document.querySelectorAll('#orbs .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===st.view));
+  $('v-hyb').hidden=!$('hybd').open;
+  $('formula').innerHTML=c.formula+'<span>'+c.ion.replace(/<[^>]+>/g,m=>m)+' · d<sup>'+c.d+'</sup></span>';
+  $('why').innerHTML=c.G.why.map(x=>'<li>'+x+'</li>').join('');
+  $('orbnote').innerHTML=st.view==='hyb'?'Die Hybridorbitale zeigen genau auf die Liganden. Jedes überlappt mit dem freien Elektronenpaar eines Liganden zu einer koordinativen Bindung.'
+    :st.view==='none'?'Wähle ein d-Orbital und vergleiche, wie nahe seine Lappen den Liganden kommen.'
+    :'<b>d<sub>'+ORB[st.view]+'</sub>:</b> '+c.G.orb[st.view];
+  drawDiagram(c); renderSpin(c); renderColor(c); renderHybrid(c); build3D(c);
+}
+function setup(){
+  $('metal').innerHTML=METALS.map((m,i)=>'<option value="'+i+'">'+m.sym+(m.ox===2?'²⁺':'³⁺')+' · d'+m.d+'</option>').join('');
+  $('metal').value=st.metal;
+  $('series').innerHTML=LIGS.map((l,i)=>(i?'<span class="lt">&lt;</span>':'')+'<button class="chip" id="lig-'+l.k+'" data-i="'+i+'" aria-pressed="false">'+l.h+'</button>').join('');
+  $('orbs').innerHTML=ORDER.map(o=>'<button class="chip" id="v-'+o+'" data-v="'+o+'" aria-pressed="false">d<sub>'+ORB[o]+'</sub></button>').join('')+
+    '<button class="chip" id="v-hyb" data-v="hyb" aria-pressed="false">Hybridorbitale</button><button class="chip" id="v-none" data-v="none" aria-pressed="false">nur Gerüst</button>';
+  document.querySelector('.seg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.geo=b.dataset.geo; update(); } });
+  $('metal').addEventListener('change',e=>{ st.metal=+e.target.value; update(); });
+  $('example').addEventListener('change',e=>{ st.ex[st.geo]=+e.target.value; update(); });
+  $('series').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.lig=+b.dataset.i; update(); } });
+  $('orbs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.view=b.dataset.v; update(); } });
+  $('diagram').addEventListener('click',e=>{ const o=e.target.dataset&&e.target.dataset.orb; if(o){ st.view=o; update(); } });
+  $('approach').addEventListener('input',e=>{ st.t=e.target.value/100; const c=current(); drawDiagram(c); build3D(c); });
+  $('hybd').addEventListener('toggle',()=>{ if(!$('hybd').open&&st.view==='hyb') st.view='z2'; update(); });
+  try{ init3D(); }catch(err){ $('stage').innerHTML='<p class="small" style="padding:16px">Das 3D-Modell braucht WebGL und konnte in diesem Browser nicht gestartet werden. Energieschema und Auswertung funktionieren trotzdem.</p>'; }
+  const re=()=>build3D(current());
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',re);
+  new MutationObserver(re).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  update();
+}
+setup();
+})();
+</script>
+</body>
+</html>
