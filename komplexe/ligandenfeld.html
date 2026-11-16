@@ -405,7 +405,6 @@ function drawDiagram(c){
   let s='<svg viewBox="0 0 320 262" role="img" aria-label="Energieschema der d-Orbitale">';
   s+='<path class="ax-l" d="M22 244V16M18 22l4-7 4 7"/><text class="t" x="30" y="20">E</text>';
   s+='<line class="gl" x1="40" x2="304" y1="'+y0+'" y2="'+y0+'"/><text class="t" x="304" y="'+(y0+13)+'" text-anchor="end">freies Ion: alle fünf gleich</text>';
-  if(t>.15){ const yb=Y(0); s+='<line class="gl" x1="40" x2="304" y1="'+yb+'" y2="'+yb+'"/>'; }
   const lv=[];
   for(const g of c.G.groups){
     const y=Y(g.E), cls=g.E>0?'hi':'lo';
