@@ -306,7 +306,8 @@ const EX={
     {f:'[CoCl<sub>4</sub>]<sup>2−</sup>',ion:'Co<sup>2+</sup>',d:7,n:4,col:'#2456d8',name:'tiefblau',note:'Kräftige Farbe: Im Tetraeder fehlt das Inversionszentrum, die d-d-Übergänge sind stärker erlaubt als im Oktaeder.'},
     {f:'[NiCl<sub>4</sub>]<sup>2−</sup>',ion:'Ni<sup>2+</sup>',d:8,n:4,col:'#3f7fd9',name:'blau',note:'Zwei ungepaarte Elektronen in t<sub>2</sub>. Vergleiche mit dem quadratisch-planaren [Ni(CN)<sub>4</sub>]<sup>2−</sup>, in dem alle Elektronen gepaart sind.'},
     {f:'[FeCl<sub>4</sub>]<sup>−</sup>',ion:'Fe<sup>3+</sup>',d:5,n:4,col:'#e9cf52',name:'gelb',note:'d<sup>5</sup> high-spin: Jeder d-d-Übergang würde einen Spin umklappen und ist deshalb fast verboten. Die gelbe Farbe stammt von einer Charge-Transfer-Bande (Elektron vom Liganden zum Metall).'},
-    {f:'[Zn(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>',ion:'Zn<sup>2+</sup>',d:10,n:4,col:'#fbfcfd',name:'farblos',note:'d<sup>10</sup>: Alle d-Orbitale sind voll. Kein Elektron kann angehoben werden, es gibt keine d-d-Absorption.'}
+    {f:'[Zn(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup>',ion:'Zn<sup>2+</sup>',d:10,n:4,col:'#fbfcfd',name:'farblos',note:'d<sup>10</sup>: Alle d-Orbitale sind voll. Kein Elektron kann angehoben werden, es gibt keine d-d-Absorption.'},
+    {f:'[CuCl<sub>4</sub>]<sup>2−</sup>',ion:'Cu<sup>2+</sup>',d:9,n:4,col:'#e2cf45',name:'gelb, im Experiment grün',note:'Der reine Komplex ist gelb und ein etwas flachgedrückter Tetraeder. Im Experiment erscheint die Lösung grün, weil neben dem gelben [CuCl<sub>4</sub>]<sup>2−</sup> noch blaue Aqua-Komplexe vorliegen (Gleichgewicht). Gelb und Blau mischen sich zu Grün. Die gelbe Farbe stammt vor allem von einer Charge-Transfer-Bande.'}
   ],
   sqp:[
     {f:'[Ni(CN)<sub>4</sub>]<sup>2−</sup>',ion:'Ni<sup>2+</sup>',d:8,n:4,col:'#f0dc6a',name:'gelb',note:'Starker Ligand CN<sup>−</sup>: Die Lücke zu d<sub>x²−y²</sub> ist so gross, dass sich alle acht Elektronen paaren.'},
@@ -445,7 +446,8 @@ function renderSpin(c){
   let big,txt,bars='';
   if(st.geo==='okt'){
     if(c.d===10){ big='voll besetzt'; txt='Bei d<sup>10</sup> sind alle fünf d-Orbitale doppelt besetzt. Die Grösse der Aufspaltung spielt für die Besetzung keine Rolle.'; }
-    else if(!c.choice){ big='eindeutige Besetzung'; txt='Bei d<sup>'+c.d+'</sup> gibt es im Oktaeder nur eine Möglichkeit, die Elektronen zu verteilen. Die Frage high-spin oder low-spin stellt sich erst bei d<sup>4</sup> bis d<sup>7</sup>.'; }
+    else if(!c.choice){ big='eindeutige Besetzung'; txt='Bei d<sup>'+c.d+'</sup> gibt es im Oktaeder nur eine Möglichkeit, die Elektronen zu verteilen. Die Frage high-spin oder low-spin stellt sich erst bei d<sup>4</sup> bis d<sup>7</sup>.';
+      if(c.m.k==='Cu2+') txt+=' <b>Besonderheit bei Cu<sup>2+</sup>:</b> Der Oktaeder ist entlang z gestreckt. Vier Liganden sitzen nah in der xy-Ebene, die zwei auf der z-Achse deutlich weiter weg. Deshalb schreibt man oft vereinfacht [Cu(H<sub>2</sub>O)<sub>4</sub>]<sup>2+</sup>.'; }
     else{
       big=c.hs?'high-spin':'low-spin';
       const mx=Math.max(c.D.v,c.P,36);
