@@ -96,9 +96,11 @@ svg{display:block;width:100%;height:auto;max-width:100%}
 .bar .track{background:var(--bg);border-radius:5px;min-width:0}
 .colorrow{display:flex;gap:14px;align-items:stretch}
 .swatch{flex:0 0 76px;min-height:76px;border-radius:8px;border:1px solid var(--line);background:#fff}
-.spec{position:relative}
-.spec canvas{width:100%;height:34px;border-radius:5px;display:block}
-.ticks{display:flex;justify-content:space-between;font:400 10px var(--f-mono);color:var(--muted);padding-top:3px}
+.swatch{flex-basis:56px;min-height:56px}
+.curve{fill:var(--ink);fill-opacity:.12;stroke:var(--ink);stroke-width:1.8;stroke-linejoin:round}
+.lmax{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3}
+.colsteps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.colsteps b{font-weight:600}
 
 .boxes{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-start}
 .shell{display:flex;flex-direction:column;gap:5px}
@@ -202,15 +204,13 @@ svg{display:block;width:100%;height:auto;max-width:100%}
       <h2>Farbe</h2>
       <div class="colorrow">
         <div class="swatch" id="swatch" role="img" aria-label="Farbe der Lösung"></div>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px">
+          <span class="flabel">Die Lösung erscheint</span>
           <div class="big" id="colbig"></div>
-          <div class="spec" id="specwrap">
-            <canvas id="spec" width="600" height="34"></canvas>
-            <div class="ticks"><span>400</span><span>450</span><span>500</span><span>550</span><span>600</span><span>650</span><span>700 nm</span></div>
-          </div>
         </div>
       </div>
-      <p class="note" id="coltxt"></p>
+      <div id="specwrap"></div>
+      <div class="note" id="coltxt"></div>
       <p class="small" id="colnote"></p>
     </section>
 
@@ -476,6 +476,30 @@ function renderSpin(c){
   $('spinkv').innerHTML=kv;
 }
 
+function absSpectrum(bands){
+  const L0=380,L1=750,X0=24,X1=472,Y0=18,Y1=118,AM=1.6;
+  const X=w=>X0+(w-L0)/(L1-L0)*(X1-X0), A=w=>Math.min(AM,bands.reduce((t,b)=>t+b.a*Math.exp(-(((1e4/w)-b.nu)**2)/(2*b.s*b.s)),0));
+  const Yv=a=>Y1-a/AM*(Y1-Y0);
+  let d='M'+X0+' '+Y1;
+  for(let w=L0;w<=L1;w+=4) d+='L'+X(w).toFixed(1)+' '+Yv(A(w)).toFixed(1);
+  d+='L'+X1+' '+Y1+'Z';
+  let stops='';
+  for(let w=L0;w<=L1;w+=10){ const c=wl2rgb(Math.min(w,749)).map(v=>Math.round(255*v)); stops+='<stop offset="'+((w-L0)/(L1-L0)).toFixed(3)+'" stop-color="rgb('+c.join(',')+')"/>'; }
+  let o='<svg viewBox="0 0 480 160" role="img" aria-label="Absorptionsspektrum"><defs><linearGradient id="rb">'+stops+'</linearGradient></defs>';
+  o+='<path class="ax-l" d="M'+X0+' '+(Y0-4)+'V'+Y1+'H'+X1+'"/>';
+  o+='<text class="t" text-anchor="middle" transform="translate(12 '+((Y0+Y1)/2)+') rotate(-90)">Absorption</text>';
+  o+='<path class="curve" d="'+d+'"/>';
+  const b0=bands[0];
+  if(b0&&b0.a>.2){
+    const lm=1e4/b0.nu;
+    if(lm>=L0&&lm<=L1){ const x=X(lm); o+='<line class="lmax" x1="'+x+'" x2="'+x+'" y1="'+(Y0-2)+'" y2="'+Y1+'"/><text class="t b" x="'+(x+(lm>650?-4:4))+'" y="'+(Y0+4)+'" text-anchor="'+(lm>650?'end':'start')+'">λ<tspan dy="3" font-size="9">max</tspan><tspan dy="-3"> ≈ '+Math.round(lm)+' nm</tspan></text>'; }
+    else if(lm>L1) o+='<text class="t b" x="'+(X1-2)+'" y="'+(Y0+4)+'" text-anchor="end">Maximum bei '+Math.round(lm)+' nm (IR) →</text>';
+    else o+='<text class="t b" x="'+(X0+4)+'" y="'+(Y0+4)+'">← Maximum bei '+Math.round(lm)+' nm (UV)</text>';
+  }
+  o+='<rect x="'+X0+'" y="'+(Y1+4)+'" width="'+(X1-X0)+'" height="12" rx="2" fill="url(#rb)"/>';
+  for(const w of [400,500,600,700]) o+='<text class="t" x="'+X(w)+'" y="'+(Y1+29)+'" text-anchor="middle">'+w+(w===700?' nm':'')+'</text>';
+  return o+'</svg>';
+}
 function renderColor(c){
   const sw=$('swatch');
   if(st.geo!=='okt'){
@@ -485,24 +509,28 @@ function renderColor(c){
   $('specwrap').hidden=false;
   const bands=bandsFor(c.d,c.hs,c.D.v), col=solColor(bands);
   sw.style.background='rgb('+col.map(x=>Math.round(255*Math.min(1,x))).join(',')+')';
-  $('colbig').textContent=hueName(col);
-  const cv=$('spec'),g=cv.getContext('2d');
-  for(let x=0;x<cv.width;x++){
-    const w=380+x/cv.width*370, rgb=wl2rgb(w), T=trans(bands,w);
-    g.fillStyle='rgb('+rgb.map(v=>Math.round(255*v*T)).join(',')+')'; g.fillRect(x,0,1,cv.height);
-  }
-  let txt,note='';
-  if(c.d===10){ txt='Alle d-Orbitale sind voll besetzt. Kein Elektron kann von unten nach oben angehoben werden, also wird kein sichtbares Licht absorbiert.'; }
-  else{
-    const lam=1e4/c.D.v;
-    txt='Ein Elektron wird von t<sub>2g</sub> nach e<sub>g</sub> angehoben. Dafür braucht es genau die Energie Δ<sub>o</sub> = h·c/λ. Das entspricht λ ≈ <b>'+Math.round(lam)+' nm</b> ('+region(lam)+'). ';
-    if(c.d===5&&c.hs) txt+='Bei d<sup>5</sup> high-spin müsste das Elektron dabei seinen Spin umklappen. Solche Übergänge sind fast verboten, die Farbe ist deshalb nur sehr blass.';
-    else txt+='Dieses Licht fehlt im durchgelassenen Spektrum (dunkle Stellen oben). Wir sehen den Rest, also etwa die Komplementärfarbe.';
-    if(bands.length>1&&!(c.d===5&&c.hs)) note='Bei mehreren d-Elektronen entstehen durch die Abstossung zwischen den Elektronen mehrere Banden. Sie sind im Spektrum eingezeichnet. ';
+  const seen=hueName(col);
+  $('colbig').textContent=seen;
+  $('specwrap').innerHTML=absSpectrum(bands);
+  let li=[],note='';
+  if(c.d===10){
+    li.push('<b>Keine Absorption:</b> Alle d-Orbitale sind voll besetzt. Kein Elektron kann von t<sub>2g</sub> nach e<sub>g</sub> springen.');
+    li.push('<b>Wir sehen:</b> Alles Licht wird durchgelassen, die Lösung ist farblos.');
+  }else if(c.d===5&&c.hs){
+    li.push('<b>Kaum Absorption:</b> Bei d<sup>5</sup> high-spin müsste das Elektron beim Sprung nach e<sub>g</sub> seinen Spin umklappen. Solche Übergänge sind fast verboten.');
+    li.push('<b>Wir sehen:</b> Fast alles Licht wird durchgelassen, die Lösung ist sehr blass oder farblos.');
+  }else{
+    const lm=1e4/c.D.v;
+    let wv=400,av=0; for(let w=400;w<=700;w+=2){ const a=1-trans(bands,w); if(a>av){av=a;wv=w;} }
+    if(lm>=400&&lm<=700) li.push('<b>Absorbiert:</b> Licht um λ<sub>max</sub> ≈ '+Math.round(lm)+' nm ('+region(lm)+'). Seine Energie hebt ein Elektron von t<sub>2g</sub> nach e<sub>g</sub>: Δ<sub>o</sub> = h·c/λ<sub>max</sub>.');
+    else li.push('<b>Absorbiert:</b> Das Maximum liegt bei '+Math.round(lm)+' nm im '+(lm>700?'IR':'UV')+'. Seine Energie entspricht Δ<sub>o</sub> = h·c/λ<sub>max</sub>. '+(av>.15?'Nur der Ausläufer der Bande reicht ins sichtbare '+region(wv)+'.':'Im sichtbaren Bereich wird kaum absorbiert.'));
+    li.push('<b>Warum eine breite Bande?</b> Die Liganden schwingen ständig, dadurch schwankt Δ<sub>o</sub> leicht. Absorbiert wird deshalb ein ganzer Bereich, am stärksten bei λ<sub>max</sub>.');
+    li.push('<b>Wir sehen:</b> '+(av>.15?'das übrige Licht gemischt. Fehlt vor allem '+region(wv)+', erscheint die Lösung '+seen+' (etwa die Komplementärfarbe).':'Fast alles Licht wird durchgelassen, die Lösung ist '+seen+'.'));
+    if(bands.length>1) note='Bei mehreren d-Elektronen gibt es zusätzliche Banden bei kürzeren Wellenlängen. ';
     if(c.l.k==='CN') note+='Bei Cyanido-Komplexen stammt die sichtbare Farbe oft von Charge-Transfer-Banden, die dieses Modell nicht erfasst. ';
   }
-  $('coltxt').innerHTML=txt;
-  $('colnote').textContent=note+'Modellrechnung nur mit d-d-Übergängen. Nicht jede Kombination existiert als stabiler Komplex.';
+  $('coltxt').innerHTML='<ul class="colsteps">'+li.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  $('colnote').textContent=note+'Vereinfachtes Modell, nur d-d-Übergänge. Nicht jede Kombination existiert als stabiler Komplex.';
 }
 
 function renderHybrid(c){
